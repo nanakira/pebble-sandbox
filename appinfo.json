@@ -1,11 +1,11 @@
 {
   "uuid": "0b0cccb6-ce84-4214-a55c-c6f10c599ac0",
-  "shortName": "Tutorial3",
-  "longName": "Tutorial3",
+  "shortName": "Sandbox",
+  "longName": "Sandbox",
   "companyName": "nanakira",
   "versionLabel": "1.0",
   "sdkVersion": "3",
-  "targetPlatforms": ["aplite", "basalt"],
+  "targetPlatforms": ["basalt"],
   "watchapp": {
     "watchface": true
   },
@@ -33,7 +33,7 @@
       {
         "type": "png",
         "name": "IMAGE_BACKGROUND",
-        "file": "images/background.png"
+        "file": "images/zh_resized_64col.png"
       }
     ]
   }
