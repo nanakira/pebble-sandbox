@@ -20,14 +20,14 @@
     "media": [
       {
         "type": "font",
-        "name": "FONT_PERFECT_DOS_48",
-        "file": "fonts/perfect-dos-vga.ttf",
-        "compatibility":"2.7"
+        "name": "FONT_QARMIC_SANS_ABRIDGED_48",
+        "file": "fonts/Qarmic_sans_Abridged.ttf",
+        "compatibility": "2.7"
       },
       {
         "type": "font",
-        "name": "FONT_PERFECT_DOS_20",
-        "file": "fonts/perfect-dos-vga.ttf",
+        "name": "FONT_QARMIC_SANS_ABRIDGED_20",
+        "file": "fonts/Qarmic_sans_Abridged.ttf",
         "compatibility": "2.7"
       },
       {

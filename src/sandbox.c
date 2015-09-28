@@ -1,4 +1,5 @@
 #include <pebble.h>
+#include "app_config.h"
 
 enum {
   KEY_TEMPERATURE = 0,
@@ -42,14 +43,15 @@ static void main_window_load(Window *window) {
   layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(s_background_layer));
 
   // Create time TextLayer
-  s_time_layer = text_layer_create(GRect(5, 52, 139, 50));
-  text_layer_set_background_color(s_time_layer, GColorClear);
-  text_layer_set_text_color(s_time_layer, GColorBlack);
+  s_time_layer = text_layer_create(GRect(STYLE_TIME_POS_X, STYLE_TIME_POS_Y,
+                                         STYLE_TIME_SIZE_X, STYLE_TIME_SIZE_Y));
+  text_layer_set_background_color(s_time_layer, STYLE_TIME_BG_COL);
+  text_layer_set_text_color(s_time_layer, STYLE_TIME_TXT_COL);
   text_layer_set_text(s_time_layer, "00:00");
 
   // Improve the layout to be more like a watchface
   // Create GFont
-  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PERFECT_DOS_48));
+  s_time_font = fonts_load_custom_font(resource_get_handle(STYLE_TIME_FONT));
   // Apply to TextLayer
   text_layer_set_font(s_time_layer, s_time_font);
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
@@ -57,14 +59,15 @@ static void main_window_load(Window *window) {
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_time_layer));
 
   // Create temperature Layer
-  s_weather_layer = text_layer_create(GRect(0, 130, 144, 25));
-  text_layer_set_background_color(s_weather_layer, GColorClear);
-  text_layer_set_text_color(s_weather_layer, GColorDarkCandyAppleRed);
+  s_weather_layer = text_layer_create(GRect(STYLE_WEATHER_POS_X, STYLE_WEATHER_POS_Y,
+                                           STYLE_WEATHER_SIZE_X, STYLE_WEATHER_SIZE_Y));
+  text_layer_set_background_color(s_weather_layer, STYLE_WEATHER_BG_COL);
+  text_layer_set_text_color(s_weather_layer, STYLE_WEATHER_TXT_COL);
   text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
   text_layer_set_text(s_weather_layer, "Loading...");
 
   // Create second custom font, apply it and add to Window
-  s_weather_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PERFECT_DOS_20));
+  s_weather_font = fonts_load_custom_font(resource_get_handle(STYLE_WEATHER_FONT));
   text_layer_set_font(s_weather_layer, s_weather_font);
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_weather_layer));
 
