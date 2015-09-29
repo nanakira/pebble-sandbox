@@ -1,15 +1,15 @@
 /* Time Text Layer */
 #define STYLE_TIME_BG_COL  GColorClear
-#define STYLE_TIME_TXT_COL GColorDarkCandyAppleRed
+#define STYLE_TIME_TXT_COL GColorRed
 #define STYLE_TIME_POS_X  5
 #define STYLE_TIME_POS_Y  8
 #define STYLE_TIME_SIZE_X 139
 #define STYLE_TIME_SIZE_Y 50
 #define STYLE_TIME_FONT   RESOURCE_ID_FONT_QARMIC_SANS_ABRIDGED_48
 
-/* Time Text Layer */
+/* Weather Text Layer */
 #define STYLE_WEATHER_BG_COL  GColorClear
-#define STYLE_WEATHER_TXT_COL GColorDarkCandyAppleRed
+#define STYLE_WEATHER_TXT_COL GColorRed
 #define STYLE_WEATHER_POS_X  0
 #define STYLE_WEATHER_POS_Y  130
 #define STYLE_WEATHER_SIZE_X 144
