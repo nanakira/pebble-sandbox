@@ -11,6 +11,8 @@ static TextLayer *s_time_layer, *s_date_layer, *s_weather_layer;
 static GFont s_time_font, s_date_font, s_weather_font;
 static BitmapLayer *s_background_layer;
 static GBitmap *s_background_bitmap;
+static Layer *s_battery_layer;
+static int s_battery_level;
 
 static void update_time() {
   // Get a tm structure
@@ -38,6 +40,21 @@ static void update_time() {
 
   // Show the date
   text_layer_set_text(s_date_layer, date_buffer);
+}
+
+static void battery_update_proc(Layer *layer, GContext *ctx) {
+  GRect bounds = layer_get_bounds(layer);
+
+  // Find the width of the bar
+  int width = (int)(float)(((float)s_battery_level / 100.0F) * 114.0F);
+
+  // Draw the background
+  graphics_context_set_fill_color(ctx, STYLE_BATTERY_BG_COL);
+  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+
+  // Draw the bar
+  graphics_context_set_fill_color(ctx, STYLE_BATTERY_COL);
+  graphics_fill_rect(ctx, GRect(0, 0, width, bounds.size.h), 0, GCornerNone);
 }
 
 static void main_window_load(Window *window) {
@@ -70,18 +87,24 @@ static void main_window_load(Window *window) {
   // Add it as a child layer to the Window's root layer
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_date_layer));
 
-  // Create temperature Layer
+  // Create weather Layer
   s_weather_layer = text_layer_create(GRect(STYLE_WEATHER_POS_X, STYLE_WEATHER_POS_Y,
                                            STYLE_WEATHER_SIZE_X, STYLE_WEATHER_SIZE_Y));
   text_layer_set_background_color(s_weather_layer, STYLE_WEATHER_BG_COL);
   text_layer_set_text_color(s_weather_layer, STYLE_WEATHER_TXT_COL);
   text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
   text_layer_set_text(s_weather_layer, "Loading...");
-
-  // Create second custom font, apply it and add to Window
   s_weather_font = fonts_load_custom_font(resource_get_handle(STYLE_WEATHER_FONT));
   text_layer_set_font(s_weather_layer, s_weather_font);
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_weather_layer));
+
+  // Create battery meter Layer
+  s_battery_layer = layer_create(GRect(STYLE_BATTERY_POS_X, STYLE_BATTERY_POS_Y,
+                                       STYLE_BATTERY_SIZE_X, STYLE_BATTERY_SIZE_Y));
+  layer_set_update_proc(s_battery_layer, battery_update_proc);
+
+  // Add to Window
+  layer_add_child(window_get_root_layer(window), s_battery_layer);
 
   // Make sure the time is displayed from the start
   update_time();
@@ -97,6 +120,8 @@ static void main_window_unload(Window *window) {
   // Destroy weather elements
   fonts_unload_custom_font(s_weather_font);
   text_layer_destroy(s_weather_layer);
+  // Destroy Battery
+  layer_destroy(s_battery_layer);
   // Destroy GBitmap
   gbitmap_destroy(s_background_bitmap);
   // Destroy BitmapLayer
@@ -164,6 +189,13 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
   APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
+static void battery_callback(BatteryChargeState state) {
+  // Record the new battery level
+  s_battery_level = state.charge_percent;
+  // Update meter
+  layer_mark_dirty(s_battery_layer);
+}
+
 static void init() {
   // Create main Window element and assign to pointer
   s_main_window = window_create();
@@ -179,6 +211,11 @@ static void init() {
 
   // Register with TickTimerService
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+
+  // Register for battery level updates
+  battery_state_service_subscribe(battery_callback);
+  // Ensure battery level is displayed from the start
+  battery_callback(battery_state_service_peek());
 
   // Register callbacks
   app_message_register_inbox_received(inbox_received_callback);

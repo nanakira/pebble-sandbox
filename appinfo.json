@@ -20,14 +20,14 @@
     "media": [
       {
         "type": "font",
-        "name": "FONT_QARMIC_SANS_ABRIDGED_48",
-        "file": "fonts/Qarmic_sans_Abridged.ttf",
+        "name": "FONT_SODA_48",
+        "file": "fonts/SODA.TTF",
         "compatibility": "2.7"
       },
       {
         "type": "font",
-        "name": "FONT_QARMIC_SANS_ABRIDGED_20",
-        "file": "fonts/Qarmic_sans_Abridged.ttf",
+        "name": "FONT_SODA_24",
+        "file": "fonts/SODA.TTF",
         "compatibility": "2.7"
       },
       {
