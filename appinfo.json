@@ -34,6 +34,11 @@
         "type": "png",
         "name": "IMAGE_BACKGROUND",
         "file": "images/zh_dark2.png"
+      },
+      {
+        "type": "png",
+        "name": "IMAGE_BT_ICON",
+        "file": "images/bt-icon.png"
       }
     ]
   }

@@ -9,10 +9,13 @@ enum {
 static Window *s_main_window;
 static TextLayer *s_time_layer, *s_date_layer, *s_weather_layer;
 static GFont s_time_font, s_date_font, s_weather_font;
-static BitmapLayer *s_background_layer;
-static GBitmap *s_background_bitmap;
+static BitmapLayer *s_background_layer, *s_bt_icon_layer;
+static GBitmap *s_background_bitmap, *s_bt_icon_bitmap;
 static Layer *s_battery_layer;
 static int s_battery_level;
+
+/* Function prototype */
+static void bluetooth_callback(bool connected);
 
 static void update_time() {
   // Get a tm structure
@@ -63,6 +66,17 @@ static void main_window_load(Window *window) {
   s_background_layer = bitmap_layer_create(GRect(0, 0, 144, 168));
   bitmap_layer_set_bitmap(s_background_layer, s_background_bitmap);
   layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(s_background_layer));
+
+  // Create the Bluetooth icon GBitmap
+  s_bt_icon_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BT_ICON);
+
+  // Create the BitmapLayer to display the GBitmap
+  s_bt_icon_layer = bitmap_layer_create(GRect(STYLE_BT_POS_X, STYLE_BT_POS_Y,
+                                              STYLE_BT_SIZE_X, STYLE_BT_SIZE_Y));
+  bitmap_layer_set_bitmap(s_bt_icon_layer, s_bt_icon_bitmap);
+  layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(s_bt_icon_layer));
+  // Show the correct state of the BT connection from the start
+  bluetooth_callback(bluetooth_connection_service_peek());
 
   // Create time TextLayer
   s_time_layer = text_layer_create(GRect(STYLE_TIME_POS_X, STYLE_TIME_POS_Y,
@@ -122,6 +136,9 @@ static void main_window_unload(Window *window) {
   text_layer_destroy(s_weather_layer);
   // Destroy Battery
   layer_destroy(s_battery_layer);
+  // Destroy Bluetooth
+  gbitmap_destroy(s_bt_icon_bitmap);
+  bitmap_layer_destroy(s_bt_icon_layer);
   // Destroy GBitmap
   gbitmap_destroy(s_background_bitmap);
   // Destroy BitmapLayer
@@ -196,6 +213,16 @@ static void battery_callback(BatteryChargeState state) {
   layer_mark_dirty(s_battery_layer);
 }
 
+static void bluetooth_callback(bool connected) {
+  // Show icon if disconnected
+  layer_set_hidden(bitmap_layer_get_layer(s_bt_icon_layer), connected);
+
+  if(!connected) {
+    // Issue a vibrating alert
+    vibes_double_pulse();
+  }
+}
+
 static void init() {
   // Create main Window element and assign to pointer
   s_main_window = window_create();
@@ -216,6 +243,9 @@ static void init() {
   battery_state_service_subscribe(battery_callback);
   // Ensure battery level is displayed from the start
   battery_callback(battery_state_service_peek());
+
+  // Register for Bluetooth connection updates
+  bluetooth_connection_service_subscribe(bluetooth_callback);
 
   // Register callbacks
   app_message_register_inbox_received(inbox_received_callback);

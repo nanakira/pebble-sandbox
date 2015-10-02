@@ -32,3 +32,9 @@
 #define STYLE_BATTERY_POS_Y  110
 #define STYLE_BATTERY_SIZE_X 115
 #define STYLE_BATTERY_SIZE_Y 2
+
+/* Bluetooth Layer */
+#define STYLE_BT_POS_X  110
+#define STYLE_BT_POS_Y  37
+#define STYLE_BT_SIZE_X 30
+#define STYLE_BT_SIZE_Y 30
