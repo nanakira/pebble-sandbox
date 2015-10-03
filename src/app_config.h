@@ -35,6 +35,6 @@
 
 /* Bluetooth Layer */
 #define STYLE_BT_POS_X  110
-#define STYLE_BT_POS_Y  37
+#define STYLE_BT_POS_Y  35
 #define STYLE_BT_SIZE_X 30
 #define STYLE_BT_SIZE_Y 30
