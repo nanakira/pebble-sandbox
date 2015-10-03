@@ -14,52 +14,78 @@ static GBitmap *s_background_bitmap, *s_bt_icon_bitmap;
 static Layer *s_battery_layer;
 static int s_battery_level;
 
-/* Function prototype */
+/********************************************//**
+ * Function prototype
+ ***********************************************/
+int main(void);
+static void init(void);
+static void deinit(void);
+static void main_window_load(Window *window);
+static void main_window_unload(Window *window);
+static void tick_handler(struct tm *tick_time, TimeUnits units_changed);
+static void battery_callback(BatteryChargeState state);
 static void bluetooth_callback(bool connected);
+static void inbox_received_callback(DictionaryIterator *iterator, void *context);
+static void inbox_dropped_callback(AppMessageResult reason, void *context);
+static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context);
+static void outbox_sent_callback(DictionaryIterator *iterator, void *context);
+static void update_time();
+static void battery_update_proc(Layer *layer, GContext *ctx);
 
-static void update_time() {
-  // Get a tm structure
-  time_t temp = time(NULL); 
-  struct tm *tick_time = localtime(&temp);
-
-  // Create a long-lived buffer
-  static char buffer[] = "00:00";
-
-  // Write the current hours and minutes into the buffer
-  if(clock_is_24h_style() == true) {
-    //Use 2h hour format
-    strftime(buffer, sizeof("00:00"), "%H:%M", tick_time);
-  } else {
-    //Use 12 hour format
-    strftime(buffer, sizeof("00:00"), "%I:%M", tick_time);
-  }
-
-  // Display this time on the TextLayer
-  text_layer_set_text(s_time_layer, buffer);
-
-  // Copy date into buffer from tm structure
-  static char date_buffer[16];
-  strftime(date_buffer, sizeof(date_buffer), "%a %d %b", tick_time);
-
-  // Show the date
-  text_layer_set_text(s_date_layer, date_buffer);
+/********************************************//**
+ * Main code
+ ***********************************************/
+int main(void) {
+  init();
+  app_event_loop();
+  deinit();
 }
 
-static void battery_update_proc(Layer *layer, GContext *ctx) {
-  GRect bounds = layer_get_bounds(layer);
+/********************************************//**
+ * Init / Deinit
+ ***********************************************/
+static void init() {
+  // Create main Window element and assign to pointer
+  s_main_window = window_create();
 
-  // Find the width of the bar
-  int width = (int)(float)(((float)s_battery_level / 100.0F) * 114.0F);
+  // Set handlers to manage the elements inside the Window
+  window_set_window_handlers(s_main_window, (WindowHandlers) {
+    .load = main_window_load,
+    .unload = main_window_unload
+  });
 
-  // Draw the background
-  graphics_context_set_fill_color(ctx, STYLE_BATTERY_BG_COL);
-  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+  // Show the Window on the watch, with animated=true
+  window_stack_push(s_main_window, true);
 
-  // Draw the bar
-  graphics_context_set_fill_color(ctx, STYLE_BATTERY_COL);
-  graphics_fill_rect(ctx, GRect(0, 0, width, bounds.size.h), 0, GCornerNone);
+  // Register with TickTimerService
+  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+
+  // Register for battery level updates
+  battery_state_service_subscribe(battery_callback);
+  // Ensure battery level is displayed from the start
+  battery_callback(battery_state_service_peek());
+
+  // Register for Bluetooth connection updates
+  bluetooth_connection_service_subscribe(bluetooth_callback);
+
+  // Register callbacks
+  app_message_register_inbox_received(inbox_received_callback);
+  app_message_register_inbox_dropped(inbox_dropped_callback);
+  app_message_register_outbox_failed(outbox_failed_callback);
+  app_message_register_outbox_sent(outbox_sent_callback);
+
+  // Open AppMessage
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 }
 
+static void deinit() {
+  // Destroy Window
+  window_destroy(s_main_window);
+}
+
+/********************************************//**
+ * Window load / unload
+ ***********************************************/
 static void main_window_load(Window *window) {
   // Create GBitmap, then set to created BitmapLayer
   s_background_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BACKGROUND);
@@ -145,6 +171,9 @@ static void main_window_unload(Window *window) {
   bitmap_layer_destroy(s_background_layer);
 }
 
+/********************************************//**
+ * Callback functions
+ ***********************************************/
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   update_time();
 
@@ -159,6 +188,23 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
     // Send the message!
     app_message_outbox_send();
+  }
+}
+
+static void battery_callback(BatteryChargeState state) {
+  // Record the new battery level
+  s_battery_level = state.charge_percent;
+  // Update meter
+  layer_mark_dirty(s_battery_layer);
+}
+
+static void bluetooth_callback(bool connected) {
+  // Show icon if disconnected
+  layer_set_hidden(bitmap_layer_get_layer(s_bt_icon_layer), connected);
+
+  if(!connected) {
+    // Issue a vibrating alert
+    vibes_double_pulse();
   }
 }
 
@@ -206,64 +252,48 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
   APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
-static void battery_callback(BatteryChargeState state) {
-  // Record the new battery level
-  s_battery_level = state.charge_percent;
-  // Update meter
-  layer_mark_dirty(s_battery_layer);
-}
+/********************************************//**
+ * Sub procs
+ ***********************************************/
+static void update_time() {
+  // Get a tm structure
+  time_t temp = time(NULL); 
+  struct tm *tick_time = localtime(&temp);
 
-static void bluetooth_callback(bool connected) {
-  // Show icon if disconnected
-  layer_set_hidden(bitmap_layer_get_layer(s_bt_icon_layer), connected);
+  // Create a long-lived buffer
+  static char buffer[] = "00:00";
 
-  if(!connected) {
-    // Issue a vibrating alert
-    vibes_double_pulse();
+  // Write the current hours and minutes into the buffer
+  if(clock_is_24h_style() == true) {
+    //Use 2h hour format
+    strftime(buffer, sizeof("00:00"), "%H:%M", tick_time);
+  } else {
+    //Use 12 hour format
+    strftime(buffer, sizeof("00:00"), "%I:%M", tick_time);
   }
+
+  // Display this time on the TextLayer
+  text_layer_set_text(s_time_layer, buffer);
+
+  // Copy date into buffer from tm structure
+  static char date_buffer[16];
+  strftime(date_buffer, sizeof(date_buffer), "%a %d %b", tick_time);
+
+  // Show the date
+  text_layer_set_text(s_date_layer, date_buffer);
 }
 
-static void init() {
-  // Create main Window element and assign to pointer
-  s_main_window = window_create();
+static void battery_update_proc(Layer *layer, GContext *ctx) {
+  GRect bounds = layer_get_bounds(layer);
 
-  // Set handlers to manage the elements inside the Window
-  window_set_window_handlers(s_main_window, (WindowHandlers) {
-    .load = main_window_load,
-    .unload = main_window_unload
-  });
+  // Find the width of the bar
+  int width = (int)(float)(((float)s_battery_level / 100.0F) * 114.0F);
 
-  // Show the Window on the watch, with animated=true
-  window_stack_push(s_main_window, true);
+  // Draw the background
+  graphics_context_set_fill_color(ctx, STYLE_BATTERY_BG_COL);
+  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  // Register with TickTimerService
-  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
-
-  // Register for battery level updates
-  battery_state_service_subscribe(battery_callback);
-  // Ensure battery level is displayed from the start
-  battery_callback(battery_state_service_peek());
-
-  // Register for Bluetooth connection updates
-  bluetooth_connection_service_subscribe(bluetooth_callback);
-
-  // Register callbacks
-  app_message_register_inbox_received(inbox_received_callback);
-  app_message_register_inbox_dropped(inbox_dropped_callback);
-  app_message_register_outbox_failed(outbox_failed_callback);
-  app_message_register_outbox_sent(outbox_sent_callback);
-
-  // Open AppMessage
-  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
-}
-
-static void deinit() {
-  // Destroy Window
-  window_destroy(s_main_window);
-}
-
-int main(void) {
-  init();
-  app_event_loop();
-  deinit();
+  // Draw the bar
+  graphics_context_set_fill_color(ctx, STYLE_BATTERY_COL);
+  graphics_fill_rect(ctx, GRect(0, 0, width, bounds.size.h), 0, GCornerNone);
 }
